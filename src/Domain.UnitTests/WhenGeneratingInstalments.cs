@@ -5,6 +5,7 @@ using System.Linq;
 using FluentAssertions;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Apprenticeship;
 using AutoFixture;
+using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Calculations;
 
 namespace SFA.DAS.Funding.ApprenticeshipEarnings.Domain.UnitTests;
 
@@ -29,7 +30,7 @@ public class WhenGeneratingInstalments
         {
             new(_fixture.Create<Guid>(), startDate, endDate, total, total + _fixture.Create<int>())
         };
-        var actualInstallments = InstalmentsGenerator.GenerateEarningsForEpisodePrices(prices, out var onProgramTotal, out var completionPayment);
+        var actualInstallments = OnProgramPayments.GenerateEarningsForEpisodePrices(prices, out var onProgramTotal, out var completionPayment);
 
         actualInstallments.Should().HaveCount(expectedNumberOfInstallments);
         actualInstallments.Should().OnlyContain(x => x.Amount == expectedInstallmentAmount);
@@ -53,7 +54,7 @@ public class WhenGeneratingInstalments
             new(_fixture.Create<Guid>(), firstPriceChangeEffectiveFromDate, secondPriceChangeEffectiveFromDate.AddDays(-1), 20000, fundingBandMax), //price changed to above funding band max
             new(_fixture.Create<Guid>(), secondPriceChangeEffectiveFromDate, endDate, 17000, fundingBandMax) //price reduced back down below funding band max
         };
-        var actualInstallments = InstalmentsGenerator.GenerateEarningsForEpisodePrices(prices, out var onProgramTotal, out var completionPayment);
+        var actualInstallments = OnProgramPayments.GenerateEarningsForEpisodePrices(prices, out var onProgramTotal, out var completionPayment);
 
         actualInstallments.Should().HaveCount(36);
         actualInstallments.Where(x => x.Amount == (decimal) 333.33333).Should().HaveCount(1);
@@ -73,7 +74,7 @@ public class WhenGeneratingInstalments
         {
             new(_fixture.Create<Guid>(), startDate, endDate, total, total + _fixture.Create<int>())
         };
-        var actualInstallments = InstalmentsGenerator.GenerateEarningsForEpisodePrices(prices, out _, out _);
+        var actualInstallments = OnProgramPayments.GenerateEarningsForEpisodePrices(prices, out _, out _);
 
         var expectedDeliveryPeriods = new List<(short academicYear, int deliveryPeriod)>
         {

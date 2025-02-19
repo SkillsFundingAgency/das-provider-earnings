@@ -5,9 +5,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using NServiceBus;
 using SFA.DAS.Apprenticeships.Types;
 using SFA.DAS.Funding.ApprenticeshipEarnings.AcceptanceTests.Helpers;
+using SFA.DAS.Funding.ApprenticeshipEarnings.AcceptanceTests.Model;
 using SFA.DAS.Funding.ApprenticeshipEarnings.DataAccess;
 using SFA.DAS.Funding.ApprenticeshipEarnings.DataAccess.Entities;
 using SFA.DAS.Funding.ApprenticeshipEarnings.TestHelpers;
+using TechTalk.SpecFlow.Assist;
 using QueueNames = SFA.DAS.Funding.ApprenticeshipEarnings.MessageHandlers.QueueNames;
 
 namespace SFA.DAS.Funding.ApprenticeshipEarnings.AcceptanceTests.StepDefinitions;
@@ -181,6 +183,57 @@ public class ApprenticeshipCreatedEventPublishingStepDefinitions
         _scenarioContext[ContextKeys.ExpectedDeliveryPeriodCount] = 24;
         _scenarioContext[ContextKeys.ExpectedDeliveryPeriodLearningAmount] = 1000;
         _scenarioContext[ContextKeys.ExpectedUln] = _apprenticeshipCreatedEvent.Uln;
+    }
+
+    [Given(@"an apprenticeship has been created with the following information")]
+    public void GivenAnApprenticeshipHasBeenCreatedWithTheFollowingInformation(TechTalk.SpecFlow.Table table)
+    {
+        var data = table.CreateSet<ApprenticeshipCreatedSetupModel>().Single();
+
+        _apprenticeshipCreatedEvent = new ApprenticeshipCreatedEvent
+        {
+            ApprenticeshipKey = Guid.NewGuid(),
+            Uln = _random.Next().ToString(),
+            ApprovalsApprenticeshipId = 120,
+            DateOfBirth = _dateOfBirth,
+            Episode = new ApprenticeshipEpisode
+            {
+                Key = Guid.NewGuid(),
+                Prices = [],
+                EmployerAccountId = 114,
+                FundingType = Apprenticeships.Enums.FundingType.Levy,
+                Ukprn = 116,
+                TrainingCode = "AbleSeafarer",
+                FundingEmployerAccountId = null,
+                LegalEntityName = "MyTrawler",
+                FundingPlatform = Apprenticeships.Enums.FundingPlatform.DAS,
+                AgeAtStartOfApprenticeship = data.Age,
+            }
+        };
+
+        _scenarioContext.Set(_apprenticeshipCreatedEvent);
+    }
+
+    [Given(@"the following Price Episodes")]
+    public void GivenTheFollowingPriceEpisodes(TechTalk.SpecFlow.Table table)
+    {
+        var data = table.CreateSet<PriceEpisodeSetupModel>().ToList();
+
+        _apprenticeshipCreatedEvent.Episode.Prices = data.Select(x => new ApprenticeshipEpisodePrice
+        {
+            TotalPrice = x.Price,
+            StartDate = x.StartDate,
+            EndDate = x.EndDate,
+            FundingBandMaximum = x.Price
+        }).ToList();
+
+        _scenarioContext.Set(_apprenticeshipCreatedEvent);
+    }
+
+    [When(@"earnings are calculated")]
+    public async Task WhenEarningsAreCalculated()
+    {
+        await _testContext.TestFunction.PublishEvent(_apprenticeshipCreatedEvent); 
     }
 
     private async Task<ApprenticeshipModel> GetApprenticeshipEntity()

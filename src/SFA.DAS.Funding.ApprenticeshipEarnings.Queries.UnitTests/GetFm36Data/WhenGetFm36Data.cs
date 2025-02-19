@@ -10,7 +10,6 @@ using SFA.DAS.Funding.ApprenticeshipEarnings.Queries.GetFm36Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -81,6 +80,7 @@ public class WhenGetFm36Data
         episodeResult.CompletionPayment.Should().Be(currentEpisode.EarningsProfile.CompletionPayment);
         episodeResult.OnProgramTotal.Should().Be(currentEpisode.EarningsProfile.OnProgramTotal);
         episodeResult.Instalments.Should().HaveCount(currentEpisode.EarningsProfile.Instalments.Count);
+        episodeResult.AdditionalPayments.Should().HaveCount(currentEpisode.EarningsProfile.AdditionalPayments.Count);
 
         foreach(var expectedInstalment in currentEpisode.EarningsProfile.Instalments)
         {
@@ -88,6 +88,16 @@ public class WhenGetFm36Data
                 x.AcademicYear == expectedInstalment.AcademicYear && 
                 x.DeliveryPeriod == expectedInstalment.DeliveryPeriod &&
                 x.Amount == expectedInstalment.Amount);
+        }
+
+        foreach (var expectedAdditionalPayment in currentEpisode.EarningsProfile.AdditionalPayments)
+        {
+            var additionalPayment = episodeResult.AdditionalPayments.Single(x =>
+                x.AcademicYear == expectedAdditionalPayment.AcademicYear &&
+                x.DeliveryPeriod == expectedAdditionalPayment.DeliveryPeriod &&
+                x.Amount == expectedAdditionalPayment.Amount &&
+                x.AdditionalPaymentType == expectedAdditionalPayment.AdditionalPaymentType &&
+                x.DueDate == expectedAdditionalPayment.DueDate);
         }
 
     }

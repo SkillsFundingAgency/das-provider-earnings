@@ -1,16 +1,16 @@
 ﻿using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Apprenticeship;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.ApprenticeshipFunding;
 
-namespace SFA.DAS.Funding.ApprenticeshipEarnings.Domain;
+namespace SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Calculations;
 
-public static class InstalmentsGenerator
+public static class OnProgramPayments
 {
     public static List<Earning> GenerateEarningsForEpisodePrices(IEnumerable<Price> prices, out decimal onProgramTotal, out decimal completionPayment)
     {
         var earnings = new List<Earning>();
         onProgramTotal = 0;
         completionPayment = 0;
-        
+
         var orderedPrices = prices.OrderBy(x => x.StartDate).ToList();
         var apprenticeshipEndDate = orderedPrices.Last().EndDate;
 
@@ -25,8 +25,8 @@ public static class InstalmentsGenerator
             var remainingCostToDistribute = onProgramTotal - earnings.Sum(x => x.Amount);
             var earningsForPricePeriod = GenerateEarningsForPeriod(
                 remainingCostToDistribute,
-                price.StartDate, 
-                price.EndDate, 
+                price.StartDate,
+                price.EndDate,
                 apprenticeshipEndDate);
             earnings.AddRange(earningsForPricePeriod);
         }
@@ -63,7 +63,7 @@ public static class InstalmentsGenerator
     {
         var startDateMonth = new DateTime(startDate.Year, startDate.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var endDateMonth = GetLastPaymentMonth(endDate);
-        var instalmentCount = ((endDateMonth.Year - startDateMonth.Year) * 12) +
+        var instalmentCount = (endDateMonth.Year - startDateMonth.Year) * 12 +
             endDateMonth.Month -
             startDateMonth.Month + 1;
         return instalmentCount;

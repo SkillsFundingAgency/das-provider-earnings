@@ -1,3 +1,4 @@
+using System.Reflection.Metadata.Ecma335;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Domain;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Apprenticeship;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Services;
@@ -24,7 +25,7 @@ public class EarningsGeneratedEventBuilder : IEarningsGeneratedEventBuilder
     {
         var currentEpisode = apprenticeship.GetCurrentEpisode(_systemClock);
 
-        return new EarningsGeneratedEvent
+        var result = new EarningsGeneratedEvent
         {
             ApprenticeshipKey = apprenticeship.ApprenticeshipKey,
             Uln = apprenticeship.Uln,
@@ -42,6 +43,8 @@ public class EarningsGeneratedEventBuilder : IEarningsGeneratedEventBuilder
             EarningsProfileId = currentEpisode.EarningsProfile!.EarningsProfileId,
             AgeAtStartOfApprenticeship = currentEpisode.AgeAtStartOfApprenticeship
         };
+
+        return result;
     }
 
     public EarningsGeneratedEvent ReGenerate(Apprenticeship apprenticeship)

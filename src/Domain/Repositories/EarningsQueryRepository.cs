@@ -95,6 +95,9 @@ public class EarningsQueryRepository : IEarningsQueryRepository
             .Include(x => x.Episodes)
             .ThenInclude(x => x.EarningsProfile)
             .ThenInclude(x => x.Instalments)
+            .Include(x => x.Episodes)
+            .ThenInclude(x => x.EarningsProfile)
+            .ThenInclude(x => x.AdditionalPayments)
             .Select(z => Apprenticeship.Apprenticeship.Get(z))
             .ToList();
 

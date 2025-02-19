@@ -2,7 +2,7 @@
 
 public class DeliveryPeriod
 {
-    public DeliveryPeriod(byte calendarMonth, short calenderYear, byte period, short academicYear, decimal learningAmount, string fundingLineType)
+    public DeliveryPeriod(byte calendarMonth, short calenderYear, byte period, short academicYear, decimal learningAmount, string fundingLineType, string instalmentType)
     {
         CalendarMonth = calendarMonth;
         CalenderYear = calenderYear;
@@ -10,6 +10,7 @@ public class DeliveryPeriod
         AcademicYear = academicYear;
         LearningAmount = learningAmount;
         FundingLineType = fundingLineType;
+        InstalmentType = instalmentType;
     }
 
     public byte CalendarMonth { get; set; }
@@ -18,4 +19,5 @@ public class DeliveryPeriod
     public short AcademicYear { get; set; }
     public decimal LearningAmount { get; set; }
     public string FundingLineType { get; set; }
+    public string InstalmentType { get; set; }
 }

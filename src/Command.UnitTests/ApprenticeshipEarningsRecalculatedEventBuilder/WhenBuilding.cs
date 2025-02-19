@@ -56,6 +56,7 @@ public class WhenBuilding
             .With(x => x.EarningsProfile, _fixture
                 .Build<EarningsProfileModel>()
                 .With(x => x.Instalments, new List<InstalmentModel>())
+                .With(x => x.AdditionalPayments, new List<AdditionalPaymentModel>())
                 .Create())
             .Create();
         _apprenticeshipEntityModel = _fixture

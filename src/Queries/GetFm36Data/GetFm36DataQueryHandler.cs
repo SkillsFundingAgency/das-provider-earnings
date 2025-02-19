@@ -56,6 +56,14 @@ public class GetFm36DataQueryHandler : IQueryHandler<GetFm36DataRequest, GetFm36
                     DeliveryPeriod = i.DeliveryPeriod,
                     Amount = i.Amount
                 }).ToList(),
+                AdditionalPayments = x.EarningsProfile!.AdditionalPayments.Select(p => new AdditionalPayment
+                {
+                    AcademicYear = p.AcademicYear,
+                    DeliveryPeriod = p.DeliveryPeriod,
+                    Amount = p.Amount,
+                    AdditionalPaymentType = p.AdditionalPaymentType,
+                    DueDate = p.DueDate
+                }).ToList(),
                 CompletionPayment = x.EarningsProfile.CompletionPayment,
                 OnProgramTotal = x.EarningsProfile.OnProgramTotal
             }).ToList(),
