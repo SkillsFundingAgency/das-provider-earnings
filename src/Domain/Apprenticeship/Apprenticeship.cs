@@ -3,6 +3,7 @@ using SFA.DAS.Funding.ApprenticeshipEarnings.DataAccess.Entities;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Apprenticeship.Events;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Services;
 using System.Collections.ObjectModel;
+using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Calculations;
 
 namespace SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Apprenticeship;
 
@@ -45,18 +46,18 @@ public class Apprenticeship : AggregateRoot
         return _model;
     }
 
-    public void CalculateEarnings(ISystemClockService systemClock)
+    public void CalculateEarnings(ISystemClockService systemClock, IEarningsCalculator earningsCalculator)
     {
         var currentEpisode = this.GetCurrentEpisode(systemClock);
-        currentEpisode.CalculateEpisodeEarnings(systemClock);
+        currentEpisode.CalculateEpisodeEarnings(systemClock, earningsCalculator);
         AddEvent(new EarningsCalculatedEvent(this));
     }
 
-    public void RecalculateEarnings(ApprenticeshipEvent apprenticeshipEvent, ISystemClockService systemClock)
+    public void RecalculateEarnings(ApprenticeshipEvent apprenticeshipEvent, ISystemClockService systemClock, IEarningsCalculator earningsCalculator)
     {
         var episode = ApprenticeshipEpisodes.Single(x => x.ApprenticeshipEpisodeKey == apprenticeshipEvent.Episode.Key);
         episode.Update(apprenticeshipEvent.Episode);
-        episode.CalculateEpisodeEarnings(systemClock);
+        episode.CalculateEpisodeEarnings(systemClock, earningsCalculator);
         AddEvent(new EarningsRecalculatedEvent(this));
     }
 
