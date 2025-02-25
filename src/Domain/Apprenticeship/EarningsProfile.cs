@@ -24,12 +24,13 @@ namespace SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Apprenticeship
     {
         private List<Instalment> _instalments;
 
-        public EarningsProfile(decimal onProgramTotal, List<Instalment> instalments, decimal completionPayment, Guid episodeKey)
+        public EarningsProfile(decimal onProgramTotal, List<Instalment> instalments, List<AdditionalPayment> additionalPayments, decimal completionPayment, Guid episodeKey)
         {
             Model = new EarningsProfileModel();
             Model.EarningsProfileId = Guid.NewGuid();
             Model.OnProgramTotal = onProgramTotal;
             Model.Instalments = instalments.Select(x => x.GetModel(Model.EarningsProfileId)).ToList();
+            Model.AdditionalPayments = additionalPayments.Select(x => x.GetModel(Model.EarningsProfileId)).ToList();
             _instalments = instalments;
             Model.CompletionPayment = completionPayment;
             Model.EpisodeKey = episodeKey;
@@ -44,6 +45,7 @@ namespace SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Apprenticeship
         public Guid EarningsProfileId => Model.EarningsProfileId;
         public decimal OnProgramTotal => Model.OnProgramTotal;
         public IReadOnlyCollection<Instalment> Instalments => new ReadOnlyCollection<Instalment>(_instalments);
+        public IReadOnlyCollection<AdditionalPayment> AdditionalPayments => Model.AdditionalPayments.Select((AdditionalPayment.Get)).ToList().AsReadOnly();
         public decimal CompletionPayment => Model.CompletionPayment;
 
         public void AddInstalments(List<Instalment> instalments)

@@ -27,6 +27,7 @@ public abstract class EarningsProfileModelBase
 public class EarningsProfileModel : EarningsProfileModelBase
 {
     public List<InstalmentModel> Instalments { get; set; } = null!;
+    public List<AdditionalPaymentModel> AdditionalPayments { get; set; } = null!;
 }
 
 [Dapper.Contrib.Extensions.Table("Domain.EarningsProfileHistory")]
@@ -37,10 +38,13 @@ public class EarningsProfileHistoryModel : EarningsProfileModelBase
     {
         SupersededDate = supersededDate;
         Instalments = original.Instalments.Select(x => new InstalmentHistoryModel(x, EarningsProfileId)).ToList();
+        AdditionalPayments = original.AdditionalPayments
+            .Select(x => new AdditionalPaymentHistoryModel(x, EarningsProfileId)).ToList();
     }
 
     public EarningsProfileHistoryModel() {}
 
     public List<InstalmentHistoryModel> Instalments { get; set; } = null!;
+    public List<AdditionalPaymentHistoryModel> AdditionalPayments { get; set; } = null!;
     public DateTime SupersededDate { get; set; }
 }

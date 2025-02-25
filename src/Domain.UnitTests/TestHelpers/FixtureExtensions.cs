@@ -76,10 +76,20 @@ internal static class FixtureExtensions
             Amount = i.Amount
         }).ToList();
 
+        var additionalPayments = earningsProfile.AdditionalPayments.Select(p => new AdditionalPaymentModel
+            {
+                AcademicYear = p.AcademicYear,
+                DeliveryPeriod = p.DeliveryPeriod,
+                Amount = p.Amount,
+                DueDate = p.DueDate,
+                AdditionalPaymentType = p.AdditionalPaymentType
+            }).ToList();
+
         return new EarningsProfileModel
         {
             OnProgramTotal = earningsProfile.OnProgramTotal,
             Instalments = instalments,
+            AdditionalPayments = additionalPayments,
             CompletionPayment = earningsProfile.CompletionPayment,
             EarningsProfileId = earningsProfile.EarningsProfileId
         };
