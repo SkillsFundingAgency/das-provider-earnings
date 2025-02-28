@@ -1,33 +1,32 @@
-using System.Text.Json;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using SFA.DAS.Apprenticeships.Types;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Command;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Command.ProcessUpdatedEpisodeCommand;
-using SFA.DAS.NServiceBus.AzureFunction.Attributes;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace SFA.DAS.Funding.ApprenticeshipEarnings.MessageHandlers;
 
 public class StartDateChangedEventHandler
 {
     private readonly ICommandHandler<ProcessEpisodeUpdatedCommand> _processEpisodeUpdatedCommandHandler;
+    private readonly ILogger<StartDateChangedEventHandler> _logger;
 
-    public StartDateChangedEventHandler(ICommandHandler<ProcessEpisodeUpdatedCommand> processEpisodeUpdatedCommandHandler)
+    public StartDateChangedEventHandler(
+        ICommandHandler<ProcessEpisodeUpdatedCommand> processEpisodeUpdatedCommandHandler,
+        ILogger<StartDateChangedEventHandler> logger)
     {
         _processEpisodeUpdatedCommandHandler = processEpisodeUpdatedCommandHandler;
+        _logger = logger;
     }
 
-    [FunctionName(nameof(StartDateChangedEventServiceBusTrigger))]
+    [Function(nameof(StartDateChangedEventServiceBusTrigger))]
     public async Task StartDateChangedEventServiceBusTrigger(
-        [NServiceBusTrigger(Endpoint = QueueNames.StartDateChangeApproved)] ApprenticeshipStartDateChangedEvent startDateChangedEvent,
-        [DurableClient] IDurableEntityClient client,
-        ILogger log)
+        [ServiceBusTrigger(QueueNames.StartDateChangeApproved)] ApprenticeshipStartDateChangedEvent startDateChangedEvent)
     {
-        log.LogInformation("{functionName} processing...", nameof(StartDateChangedEventServiceBusTrigger));
-        log.LogInformation("ApprenticeshipKey: {key} Received {eventName}: {eventJson}",
+        _logger.LogInformation("{functionName} processing...", nameof(StartDateChangedEventServiceBusTrigger));
+        _logger.LogInformation("ApprenticeshipKey: {key} Received {eventName}: {eventJson}",
             startDateChangedEvent.ApprenticeshipKey,
             nameof(ApprenticeshipStartDateChangedEvent),
             JsonSerializer.Serialize(startDateChangedEvent, new JsonSerializerOptions { WriteIndented = true }));

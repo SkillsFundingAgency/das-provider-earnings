@@ -1,14 +1,25 @@
-﻿using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using NServiceBus;
+using SFA.DAS.Apprenticeships.Types;
+using SFA.DAS.Configuration.AzureTableStorage;
+using SFA.DAS.Funding.ApprenticeshipEarnings.AcceptanceTests.Helpers;
+using SFA.DAS.Funding.ApprenticeshipEarnings.AcceptanceTests.StepDefinitions;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Services;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Infrastructure.Configuration;
+using SFA.DAS.Funding.ApprenticeshipEarnings.Infrastructure.Extensions;
 using SFA.DAS.Funding.ApprenticeshipEarnings.MessageHandlers;
 using SFA.DAS.Funding.ApprenticeshipEarnings.TestHelpers;
 using SFA.DAS.Testing.AzureStorageEmulator;
+using System;
+using System.Linq;
+using System.Net;
 
 namespace SFA.DAS.Funding.ApprenticeshipEarnings.AcceptanceTests;
 
@@ -23,110 +34,50 @@ public class Settings
 public class TestFunction : IDisposable
 {
     private readonly TestContext _testContext;
-    private readonly IHost _host;
+    private readonly TestServer _testServer;
+    private readonly IEnumerable<QueueTriggeredFunction> _queueTriggeredFunctions;
     private bool _isDisposed;
 
-    private IJobHost Jobs => _host.Services.GetService<IJobHost>();
     public string HubName { get; }
-    private readonly OrchestrationData _orchestrationData;
 
     public TestFunction(TestContext testContext, string hubName)
     {
         AzureStorageEmulatorManager.StartStorageEmulator();
         
+
         HubName = hubName;
-        _orchestrationData = new OrchestrationData();
-
         _testContext = testContext;
+        var _ = new Startup();// This forces the AzureFunction assembly to load
+        _queueTriggeredFunctions = QueueFunctionResolver.GetQueueTriggeredFunctions();
 
-        
-        var config = new ConfigurationBuilder()
-            //.SetBasePath()
-            .AddJsonFile("local.settings.json", optional: true)
-            .AddEnvironmentVariables()
-            .Build();
+        _testServer = new TestServer(new WebHostBuilder()
+            .UseEnvironment(Environments.Development)
+            .UseStartup<TestStartup>((_) => new TestStartup(testContext, _queueTriggeredFunctions, _testContext.MessageSession)));
 
-        var settings = new Settings();
-
-        config.Bind(settings);
-
-        var appConfig = new Dictionary<string, string>{
-            { "EnvironmentName", "LOCAL_ACCEPTANCE_TESTS" },
-            { "AzureWebJobsStorage", settings.AzureWebJobsStorage },
-            { "NServiceBusConnectionString", settings.NServiceBusConnectionString ?? "UseLearningEndpoint=true" },
-            { "TopicPath", settings.TopicPath },
-            { "QueueName", settings.QueueName },
-            { "ApplicationSettings:LogLevel", "DEBUG" },
-            { "ApplicationSettings:DbConnectionString", testContext.SqlDatabase?.DatabaseInfo.ConnectionString! }
-        };
-
-        _testContext = testContext;
-
-        Environment.SetEnvironmentVariable("AzureWebJobsStorage", "UseDevelopmentStorage=true", EnvironmentVariableTarget.Process);
-        Environment.SetEnvironmentVariable("NServiceBusConnectionString", "UseLearningEndpoint=true", EnvironmentVariableTarget.Process);
-        Environment.SetEnvironmentVariable("ApplicationSettings:NServiceBusConnectionString", "UseLearningEndpoint=true", EnvironmentVariableTarget.Process);
-        Environment.SetEnvironmentVariable("LearningTransportStorageDirectory", Path.Combine(Directory.GetCurrentDirectory().Substring(0, Directory.GetCurrentDirectory().IndexOf("src")), @"src\.learningtransport"), EnvironmentVariableTarget.Process);
-        Environment.SetEnvironmentVariable("EnvironmentName", "LOCAL_ACCEPTANCE_TESTS", EnvironmentVariableTarget.Process);
-
-        _host = new HostBuilder()
-            .ConfigureAppConfiguration(a =>
-            {
-                a.Sources.Clear();
-                a.AddInMemoryCollection(appConfig);
-            })
-            .ConfigureWebJobs(builder => builder
-                .AddDurableTask(options =>
-                {
-                    options.HubName = HubName;
-                    options.UseAppLease = false;
-                    options.UseGracefulShutdown = false;
-                    options.ExtendedSessionsEnabled = false;
-                    options.StorageProvider["maxQueuePollingInterval"] = new TimeSpan(0, 0, 0, 0, 500);
-                    options.StorageProvider["partitionCount"] = 1;
-                })
-                .AddAzureStorageCoreServices()
-                .ConfigureServices(s =>
-                {
-                    builder.Services.AddLogging(options =>
-                    {
-                        options.SetMinimumLevel(LogLevel.Trace);
-                        options.AddConsole();
-                    });
-                    s.Configure<ApplicationSettings>(a =>
-                    {
-                        a.AzureWebJobsStorage = appConfig["AzureWebJobsStorage"];
-                        a.QueueName = appConfig["QueueName"];
-                        a.TopicPath = appConfig["TopicPath"];
-                        a.ServiceBusConnectionString = appConfig["NServiceBusConnectionString"];
-                        a.DbConnectionString = appConfig["DbConnectionString"];
-                    });
-
-                    new Startup().Configure(builder);
-
-
-                    s.AddSingleton(typeof(IOrchestrationData), _orchestrationData);
-                    s.AddSingleton<ISystemClockService, TestSystemClock>();// override DI in Startup
-                })
-            )
-            .Build();
     }
 
-    public async Task StartHost()
+    public async Task PublishEvent<T>(T eventObject)
     {
-        var timeout = new TimeSpan(0, 2, 10);
-        var delayTask = Task.Delay(timeout);
+        var function = _queueTriggeredFunctions.FirstOrDefault(x => x.Endpoints.Where(e => e.EventType == typeof(T)).Any());
+        var handler = _testServer.Services.GetService(function.ClassType);
+        var method = function.Endpoints.FirstOrDefault(x => x.EventType == typeof(T)).MethodInfo;
 
-        await Task.WhenAny(Task.WhenAll(_host.StartAsync()), delayTask);
-
-        if (delayTask.IsCompleted)
+        if (method.GetParameters().Length != 1)
         {
-            throw new Exception($"Failed to start test function host within {timeout.Seconds} seconds.  Check the AzureStorageEmulator is running. ");
+            throw new InvalidOperationException("To trigger events for functions with multiple parameters more development is required");
+        }
+        try
+        {
+            await (Task)method.Invoke(handler, new object[] { eventObject });
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to invoke method {method.Name} on class {function.ClassType.Name}", ex);
         }
     }
-    
+
     public async Task DisposeAsync()
     {
-        await Jobs.StopAsync();
         Dispose();
     }
 
@@ -142,9 +93,10 @@ public class TestFunction : IDisposable
 
         if (disposing)
         {
-            _host.Dispose();
+            // no components to dispose
         }
 
         _isDisposed = true;
     }
+
 }

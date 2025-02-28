@@ -1,33 +1,32 @@
-using System.Text.Json;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using SFA.DAS.Apprenticeships.Types;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Command;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Command.ProcessUpdatedEpisodeCommand;
-using SFA.DAS.NServiceBus.AzureFunction.Attributes;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace SFA.DAS.Funding.ApprenticeshipEarnings.MessageHandlers;
 
 public class ApprenticeshipPriceChangedEventHandler
 {
     private readonly ICommandHandler<ProcessEpisodeUpdatedCommand> _processEpisodeUpdatedCommandHandler;
+    private readonly ILogger<ApprenticeshipPriceChangedEventHandler> _logger;
 
-    public ApprenticeshipPriceChangedEventHandler(ICommandHandler<ProcessEpisodeUpdatedCommand> processEpisodeUpdatedCommandHandler)
+    public ApprenticeshipPriceChangedEventHandler(
+        ICommandHandler<ProcessEpisodeUpdatedCommand> processEpisodeUpdatedCommandHandler,
+        ILogger<ApprenticeshipPriceChangedEventHandler> logger)
     {
         _processEpisodeUpdatedCommandHandler = processEpisodeUpdatedCommandHandler;
+        _logger = logger;
     }
 
-    [FunctionName(nameof(PriceChangeApprovedEventServiceBusTrigger))]
+    [Function(nameof(PriceChangeApprovedEventServiceBusTrigger))]
     public async Task PriceChangeApprovedEventServiceBusTrigger(
-        [NServiceBusTrigger(Endpoint = QueueNames.PriceChangeApproved)] ApprenticeshipPriceChangedEvent apprenticeshipPriceChangedEvent,
-        [DurableClient] IDurableEntityClient client,
-        ILogger log)
+        [ServiceBusTrigger(QueueNames.PriceChangeApproved)] ApprenticeshipPriceChangedEvent apprenticeshipPriceChangedEvent)
     {
-        log.LogInformation($"{nameof(PriceChangeApprovedEventServiceBusTrigger)} processing...");
-        log.LogInformation("ApprenticeshipKey: {key} Received {eventName}: {eventJson}",
+        _logger.LogInformation($"{nameof(PriceChangeApprovedEventServiceBusTrigger)} processing...");
+        _logger.LogInformation("ApprenticeshipKey: {key} Received {eventName}: {eventJson}",
             apprenticeshipPriceChangedEvent.ApprenticeshipKey,
             nameof(ApprenticeshipPriceChangedEvent),
             JsonSerializer.Serialize(apprenticeshipPriceChangedEvent, new JsonSerializerOptions { WriteIndented = true }));

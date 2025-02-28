@@ -17,7 +17,6 @@ public class ApprenticeshipCreatedEventPublishingStepDefinitions
 {
     private readonly ScenarioContext _scenarioContext;
     private readonly TestContext _testContext;
-    private static IEndpointInstance? _endpointInstance;
     private ApprenticeshipCreatedEvent _apprenticeshipCreatedEvent;
 
     private DateTime _startDate = new DateTime(2019, 01, 01);
@@ -32,20 +31,6 @@ public class ApprenticeshipCreatedEventPublishingStepDefinitions
         _scenarioContext = scenarioContext;
         _testContext = testContext;
         TestSystemClock.SetDateTime(_defaultCurrentDateTime);
-    }
-
-    [BeforeTestRun]
-    public static async Task StartEndpoint()
-    {
-        _endpointInstance = await EndpointHelper
-            .StartEndpoint(QueueNames.ApprovalCreated, true, new[] { typeof(ApprenticeshipCreatedEvent) });
-    }
-
-    [AfterTestRun]
-    public static async Task StopEndpoint()
-    {
-        await _endpointInstance.Stop()
-            .ConfigureAwait(false);
     }
 
     [Given(@"the apprenticeship learner is 16-18 at the start of the apprenticeship")]
@@ -100,7 +85,7 @@ public class ApprenticeshipCreatedEventPublishingStepDefinitions
                 AgeAtStartOfApprenticeship = _ageAtStartOfApprenticeship,
             }
         };
-        await _endpointInstance.Publish(_apprenticeshipCreatedEvent);
+        await _testContext.TestFunction.PublishEvent(_apprenticeshipCreatedEvent);
 
         _scenarioContext[ContextKeys.ExpectedDeliveryPeriodCount] = 24;
         _scenarioContext[ContextKeys.ExpectedDeliveryPeriodLearningAmount] = 500;
@@ -140,7 +125,7 @@ public class ApprenticeshipCreatedEventPublishingStepDefinitions
             }
         };
 
-        await _endpointInstance.Publish(_apprenticeshipCreatedEvent);
+        await _testContext.TestFunction.PublishEvent(_apprenticeshipCreatedEvent);
 
         _scenarioContext[ContextKeys.ExpectedUln] = _apprenticeshipCreatedEvent.Uln;
     }
@@ -191,7 +176,7 @@ public class ApprenticeshipCreatedEventPublishingStepDefinitions
                 AgeAtStartOfApprenticeship = _ageAtStartOfApprenticeship,
             }
         };
-        await _endpointInstance.Publish(_apprenticeshipCreatedEvent);
+        await _testContext.TestFunction.PublishEvent(_apprenticeshipCreatedEvent);
 
         _scenarioContext[ContextKeys.ExpectedDeliveryPeriodCount] = 24;
         _scenarioContext[ContextKeys.ExpectedDeliveryPeriodLearningAmount] = 1000;

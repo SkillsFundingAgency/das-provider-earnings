@@ -1,5 +1,4 @@
-﻿using NServiceBus;
-using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Repositories;
+﻿using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Repositories;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Services;
 
 namespace SFA.DAS.Funding.ApprenticeshipEarnings.Command.ProcessUpdatedEpisodeCommand;
@@ -11,7 +10,11 @@ public class ProcessEpisodeUpdatedCommandHandler : ICommandHandler<ProcessEpisod
     private readonly IApprenticeshipEarningsRecalculatedEventBuilder _eventBuilder;
     private readonly ISystemClockService _systemClock;
 
-    public ProcessEpisodeUpdatedCommandHandler(IApprenticeshipRepository apprenticeshipRepository, IMessageSession messageSession, IApprenticeshipEarningsRecalculatedEventBuilder eventBuilder, ISystemClockService systemClock)
+    public ProcessEpisodeUpdatedCommandHandler(
+        IApprenticeshipRepository apprenticeshipRepository, 
+        IMessageSession messageSession, 
+        IApprenticeshipEarningsRecalculatedEventBuilder eventBuilder, 
+        ISystemClockService systemClock)
     {
         _apprenticeshipRepository = apprenticeshipRepository;
         _messageSession = messageSession;

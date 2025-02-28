@@ -15,7 +15,6 @@ public class RecalculateEarningsStepDefinitions
 {
     private readonly ScenarioContext _scenarioContext;
     private readonly TestContext _testContext;
-    private static IEndpointInstance? _endpointInstance;
     private readonly Random _random = new();
 
     private ApprenticeshipCreatedEvent? _apprenticeshipCreatedEvent;
@@ -67,26 +66,6 @@ public class RecalculateEarningsStepDefinitions
         TestSystemClock.SetDateTime(_defaultCurrentDateTime);
     }
 
-    [BeforeTestRun]
-    public static async Task StartEndpoint()
-    {
-        _endpointInstance = await EndpointHelper
-            .StartEndpoint("Test.Funding.ApprenticeshipEarnings", true, new[]
-            {
-                typeof(ApprenticeshipCreatedEvent), 
-                typeof(ApprenticeshipPriceChangedEvent), 
-                typeof(ApprenticeshipStartDateChangedEvent), 
-                typeof(EarningsRecalculatedEvent),
-                typeof(ApprenticeshipWithdrawnEvent)
-            });
-    }
-
-    [AfterTestRun]
-    public static async Task StopEndpoint()
-    {
-        await _endpointInstance!.Stop()
-            .ConfigureAwait(false);
-    }
 
     #region Arrange
     [Given("an apprenticeship has been created")]
@@ -296,7 +275,7 @@ public class RecalculateEarningsStepDefinitions
     [Given(@"the earnings for the apprenticeship are calculated")]
     public async Task PublishApprenticeshipCreatedEvent()
     {
-        await _endpointInstance.Publish(_apprenticeshipCreatedEvent);
+        await _testContext.TestFunction.PublishEvent(_apprenticeshipCreatedEvent);
         await WaitHelper.WaitForItAsync(async() => await EnsureApprenticeshipEntityCreated(), "Failed to publish create");
     }
 
@@ -306,14 +285,14 @@ public class RecalculateEarningsStepDefinitions
     [When("the price change is approved by the other party before the end of year")]
     public async Task PublishPriceChangeEvents()
     {
-        await _endpointInstance.Publish(_apprenticeshipPriceChangedEvent);
+        await _testContext.TestFunction.PublishEvent(_apprenticeshipPriceChangedEvent);
         await WaitHelper.WaitForItAsync(async () => await EnsureRecalculationHasHappened(), "Failed to publish priceChange");
     }
 
 	[When("the start date change is approved")]
 	public async Task PublishStartDateChangeEvents()
 	{
-		await _endpointInstance.Publish(_startDateChangedEvent);
+        await _testContext.TestFunction.PublishEvent(_startDateChangedEvent);
 		await WaitHelper.WaitForItAsync(async () => await EnsureRecalculationHasHappened(), "Failed to publish start date change");
 	}
 
@@ -322,7 +301,16 @@ public class RecalculateEarningsStepDefinitions
     {
         _apprenticeshipWithdrawnEvent.LastDayOfLearning = new DateTime(2020, 08, 31);
         _expectedNumberOfInstalments = 12;
-        await _endpointInstance.Publish(_apprenticeshipWithdrawnEvent);
+        await _testContext.TestFunction.PublishEvent(_apprenticeshipWithdrawnEvent);
+        await WaitHelper.WaitForItAsync(async () => await EnsureRecalculationHasHappened(), "Failed to publish withdrawal");
+    }
+
+    [When("a withdrawal was sent prior to completion of qualifying period")]
+    public async Task PublishWithdrawnEventPriorToQualifyingPeriodCompletion()
+    {
+        _apprenticeshipWithdrawnEvent.LastDayOfLearning = new DateTime(2019, 10, 4);
+        _expectedNumberOfInstalments = 0;
+        await _testContext.TestFunction.PublishEvent(_apprenticeshipWithdrawnEvent);
         await WaitHelper.WaitForItAsync(async () => await EnsureRecalculationHasHappened(), "Failed to publish withdrawal");
     }
 
@@ -400,6 +388,7 @@ public class RecalculateEarningsStepDefinitions
     [Then("the number of instalments is determined by the number of census dates passed between the effective-from date and the planned end date of the apprenticeship")]
     [Then("the number of instalments is determined by the number of census dates passed between the new start date and the planned end date of the apprenticeship")]
     [Then("the number of instalments is determined by the number of census dates passed between the start date and the withdrawal date")]
+    [Then("the number of instalments is zero")]
     public void AssertNumberOfInstalments()
     {
         var currentEpisode = _updatedApprenticeshipEntity!.GetCurrentEpisode(TestSystemClock.Instance());
@@ -506,11 +495,6 @@ public class RecalculateEarningsStepDefinitions
 
         var currentEpisode = apprenticeshipEntity!.GetCurrentEpisode(TestSystemClock.Instance());
         if (!currentEpisode.EarningsProfileHistory.Any())
-        {
-            return false;
-        }
-
-        if (!currentEpisode.EarningsProfile.Instalments.Any())
         {
             return false;
         }

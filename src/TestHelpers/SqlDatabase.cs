@@ -45,8 +45,8 @@ public class SqlDatabase : IDisposable
     private void CreateTestDatabase()
     {
         Directory.CreateDirectory("C:\\temp");
-        var dbConnectionString = @$"Data Source={_source};Initial Catalog={DatabaseInfo.DatabaseName};{_authentication};MultipleActiveResultSets=True;Pooling=False;Connect Timeout=30;";
-        var masterConnectionString = @$"Data Source={_source};Initial Catalog=master;{_authentication};MultipleActiveResultSets=true";
+        var dbConnectionString = @$"Data Source={_source};Initial Catalog={DatabaseInfo.DatabaseName};{_authentication};MultipleActiveResultSets=True;Pooling=False;Connect Timeout=90;;Trusted_Connection=True;TrustServerCertificate=True";
+        var masterConnectionString = @$"Data Source={_source};Initial Catalog=master;{_authentication};MultipleActiveResultSets=true;Trusted_Connection=True;TrustServerCertificate=True";
 
         DatabaseInfo.SetConnectionString(dbConnectionString);
 
@@ -64,6 +64,7 @@ public class SqlDatabase : IDisposable
             using var cmd = new SqlCommand(sql, dbConn);
             dbConn.Open();
             cmd.ExecuteNonQuery();
+
         }
         catch (Exception ex)
         {
@@ -76,9 +77,6 @@ public class SqlDatabase : IDisposable
                 dbConn.Close();
             }
         }
-
-        using var dbConnection = new SqlConnection(DatabaseInfo.ConnectionString);
-        dbConnection.Open();
     }
 
     private void DeleteTestDatabase()

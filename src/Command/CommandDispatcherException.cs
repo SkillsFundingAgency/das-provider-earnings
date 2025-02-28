@@ -21,6 +21,9 @@ public sealed class CommandDispatcherException : Exception
     {
     }
 
+#if NET8_0_OR_GREATER
+    [Obsolete(DiagnosticId = "SYSLIB0051")] // add this attribute to the serialization ctor
+#endif
     private CommandDispatcherException(SerializationInfo info, StreamingContext context)
         : base(info, context)
     {

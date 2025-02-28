@@ -46,7 +46,7 @@ namespace SFA.DAS.Funding.ApprenticeshipEarnings.DataAccess.UnitTests.EarningsQu
             var result = _sut.GetApprenticeships(ukprn);
 
             // Assert
-            result.IsNullOrEmpty();
+            result.Should().BeNullOrEmpty();
         }
 
         [Test]
@@ -61,7 +61,7 @@ namespace SFA.DAS.Funding.ApprenticeshipEarnings.DataAccess.UnitTests.EarningsQu
             var result = _sut.GetApprenticeships(ukprn);
 
             // Assert
-            result.IsNullOrEmpty();
+            result.Should().BeNullOrEmpty();
         }
 
         [Test]

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using NServiceBus;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Repositories;
 
 namespace SFA.DAS.Funding.ApprenticeshipEarnings.Command.ReReleaseEarningsGeneratedCommand;
@@ -15,7 +14,8 @@ public class ReReleaseEarningsGeneratedCommandHandler : ICommandHandler<ReReleas
         ILogger<ReReleaseEarningsGeneratedCommandHandler> logger,
         IEarningsQueryRepository earningsQueryRepository,
         IEarningsGeneratedEventBuilder earningsGeneratedEventBuilder,
-        IMessageSession messageSession)
+        IMessageSession messageSession
+        )
     {
         _logger = logger;
         _earningsQueryRepository = earningsQueryRepository;

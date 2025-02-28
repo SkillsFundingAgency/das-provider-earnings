@@ -2,7 +2,7 @@
   "profiles": {
     "DurableEntities": {
       "commandName": "Project",
-      "commandLineArgs": "--port 7174",
+      "commandLineArgs": "--port 7175",
       "launchBrowser": false
     }
   }

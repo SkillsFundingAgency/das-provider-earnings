@@ -50,7 +50,7 @@ public class WhenHandleReReleaseEarningsGeneratedEvent
         await _handler.Handle(command);
 
         // Assert
-        _messageSessionMock.Verify(x => x.Publish(It.IsAny<EarningsGeneratedEvent>(), It.IsAny<PublishOptions>()), Times.Never);
+        _messageSessionMock.Verify(x => x.Publish(It.IsAny<EarningsGeneratedEvent>(), It.IsAny<PublishOptions>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]
@@ -67,6 +67,6 @@ public class WhenHandleReReleaseEarningsGeneratedEvent
         await _handler.Handle(command);
 
         // Assert
-        _messageSessionMock.Verify(x => x.Publish(eventMessage, It.IsAny<PublishOptions>()), Times.Exactly(apprenticeships.Count));
+        _messageSessionMock.Verify(x => x.Publish(eventMessage, It.IsAny<PublishOptions>(), It.IsAny<CancellationToken>()), Times.Exactly(apprenticeships.Count));
     }
 }

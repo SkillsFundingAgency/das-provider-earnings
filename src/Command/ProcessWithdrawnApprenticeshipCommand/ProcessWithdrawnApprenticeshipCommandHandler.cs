@@ -1,10 +1,9 @@
-﻿using NServiceBus;
-using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Repositories;
+﻿using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Repositories;
 using SFA.DAS.Funding.ApprenticeshipEarnings.Domain.Services;
 
 namespace SFA.DAS.Funding.ApprenticeshipEarnings.Command.ProcessWithdrawnApprenticeshipCommand;
 
-public class ProcessWithdrawnApprenticeshipCommandHandler : IProcessWithdrawnApprenticeshipCommandHandler
+public class ProcessWithdrawnApprenticeshipCommandHandler : ICommandHandler<ProcessWithdrawnApprenticeshipCommand>
 {
     private readonly IApprenticeshipRepository _apprenticeshipRepository;
     private readonly IMessageSession _messageSession;
@@ -19,7 +18,7 @@ public class ProcessWithdrawnApprenticeshipCommandHandler : IProcessWithdrawnApp
         _systemClock = systemClock;
     }
 
-    public async Task Process(ProcessWithdrawnApprenticeshipCommand command)
+    public async Task Handle(ProcessWithdrawnApprenticeshipCommand command, CancellationToken cancellationToken = default)
     {
         var apprenticeshipDomainModel = await _apprenticeshipRepository.Get(command.ApprenticeshipKey);
 

@@ -2,7 +2,7 @@
 
 namespace SFA.DAS.Funding.ApprenticeshipEarnings.Command.ProcessWithdrawnApprenticeshipCommand;
 
-public class ProcessWithdrawnApprenticeshipCommand
+public class ProcessWithdrawnApprenticeshipCommand : ICommand
 {
     public ProcessWithdrawnApprenticeshipCommand(ApprenticeshipWithdrawnEvent apprenticeshipWithdrawnEvent)
     {
