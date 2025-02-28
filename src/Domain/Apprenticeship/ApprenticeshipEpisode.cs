@@ -47,11 +47,15 @@ public class ApprenticeshipEpisode
         return new ApprenticeshipEpisode(entity);
     }
 
-    public void CalculateEpisodeEarnings(ISystemClockService systemClock)
+    public void CalculateEpisodeEarnings(ISystemClockService systemClock, IEarningsCalculator earningsCalculator)
     {
-        var earnings = OnProgramPayments.GenerateEarningsForEpisodePrices(Prices, out var onProgramTotal, out var completionPayment);
-        var additionalPayments = IncentivePayments.Generate16to18IncentivePayments(AgeAtStartOfApprenticeship, _prices.Min(p => p.StartDate), _prices.Max(p => p.EndDate));
-        UpdateEarningsProfile(earnings, additionalPayments, systemClock, onProgramTotal, completionPayment);
+        var result = earningsCalculator.CalculateEarnings(this);
+        
+        //No more statics
+        //var earnings = OnProgramPayments.GenerateEarningsForEpisodePrices(Prices, out var onProgramTotal, out var completionPayment);
+        //var additionalPayments = IncentivePayments.Generate16to18IncentivePayments(AgeAtStartOfApprenticeship, _prices.Min(p => p.StartDate), _prices.Max(p => p.EndDate));
+        
+        UpdateEarningsProfile(result.Earnings, result.AdditionalPayments, systemClock, result.OnProgramTotal, result.CompletionPayment);
     }
 
     public void Update(Apprenticeships.Types.ApprenticeshipEpisode episodeUpdate)
@@ -137,7 +141,7 @@ public class ApprenticeshipEpisode
         _prices.AddRange(newPrices);
     }
 
-    private void UpdateEarningsProfile(IEnumerable<Earning> earnings, IEnumerable<IncentivePayment> incentivePayments, ISystemClockService systemClock, decimal onProgramTotal, decimal completionPayment)
+    private void UpdateEarningsProfile(IEnumerable<Earning> earnings, IEnumerable<AdditionalPayment> additionalPaymentList, ISystemClockService systemClock, decimal onProgramTotal, decimal completionPayment)
     {
         if (EarningsProfile != null)
         {
@@ -147,8 +151,8 @@ public class ApprenticeshipEpisode
 
         var instalments = earnings.Select(x => new Instalment(x.AcademicYear, x.DeliveryPeriod, x.Amount)).ToList();
 
-        var additionalPayments = incentivePayments.Select(x =>
-            new AdditionalPayment(x.AcademicYear, x.DeliveryPeriod, x.Amount, x.DueDate, x.IncentiveType)).ToList();
+        var additionalPayments = additionalPaymentList.Select(x =>
+            new AdditionalPayment(x.AcademicYear, x.DeliveryPeriod, x.Amount, x.DueDate, x.AdditionalPaymentType)).ToList();
 
         _earningsProfile = new EarningsProfile(onProgramTotal, instalments, additionalPayments, completionPayment, ApprenticeshipEpisodeKey);
         _model.EarningsProfile = _earningsProfile.GetModel();
